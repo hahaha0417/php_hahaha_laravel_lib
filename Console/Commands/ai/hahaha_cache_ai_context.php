@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Finder\SplFileInfo;
+use Throwable;
 
 #[Signature('app:hahaha-cache-ai-context {--output-dir=storage/app/ai-context : Directory used to store AI context cache files}')]
 #[Description('為 AI 助手快取多份專案上下文檔案')]
@@ -88,12 +89,25 @@ class hahaha_cache_ai_context extends Command
 
     private function renderDatabaseSchemaSummary(): string
     {
-        $tables_ = Schema::getTables();
+        try {
+            $tables_ = Schema::getTables();
+            $database_name_ = DB::getDatabaseName();
+        } catch (Throwable $throwable_) {
+            return implode(PHP_EOL, [
+                '# Database Schema',
+                '',
+                'Generated at: '.Carbon::now()->toDateTimeString(),
+                'Status: unavailable',
+                'Reason: '.$throwable_->getMessage(),
+                '',
+            ]).PHP_EOL;
+        }
+
         $lines_ = [
             '# Database Schema',
             '',
             'Generated at: '.Carbon::now()->toDateTimeString(),
-            'Database: '.DB::getDatabaseName(),
+            'Database: '.$database_name_,
             'Table count: '.count($tables_),
             '',
         ];
