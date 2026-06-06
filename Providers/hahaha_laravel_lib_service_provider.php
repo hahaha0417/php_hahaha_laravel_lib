@@ -12,6 +12,8 @@ use L_Lib\Console\Commands\db\hahaha_command_create_database;
 use L_Lib\Console\Commands\db\hahaha_command_db_table_enum_generate;
 use L_Lib\Console\Commands\db\hahaha_command_delete_database;
 use L_Lib\Console\Commands\db\hahaha_command_rename_database;
+use L_Lib\Console\Commands\git\hahaha_command_clone;
+use L_Lib\Console\Commands\git\hahaha_command_pull;
 
 class hahaha_laravel_lib_service_provider extends ServiceProvider
 {
@@ -33,6 +35,8 @@ class hahaha_laravel_lib_service_provider extends ServiceProvider
                 hahaha_command_create_database::class,
                 hahaha_command_delete_database::class,
                 hahaha_command_rename_database::class,
+                hahaha_command_clone::class,
+                hahaha_command_pull::class,
             ]);
         }
     }

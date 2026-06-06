@@ -3,4 +3,8 @@ php artisan app:hahaha-cache-code-summary
 php artisan app:hahaha-cache-project-structure
 php artisan db:hahaha_command_db_table_enum_generate
 
+php artisan l_lib:git:clone --url="https://github.com/hahaha0417/php_hahahalib.git" --path="library\php_hahahalib"
+php artisan l_lib:git:clone --url="https://github.com/hahaha0417/php_hahaha_laravel_lib.git" --path="library\hahaha_laravel_lib"
 
+php artisan l_lib:git:pull --url="https://github.com/hahaha0417/php_hahahalib.git" --path="library\php_hahahalib"
+php artisan l_lib:git:pull --url="https://github.com/hahaha0417/php_hahaha_laravel_lib.git" --path="library\hahaha_laravel_lib"
