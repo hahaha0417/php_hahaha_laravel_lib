@@ -7,7 +7,7 @@ use Illuminate\Console\Command;
 
 class hahaha_command_db_table_enum_generate extends Command
 {
-    protected $signature = 'db:hahaha_command_db_table_enum_generate
+    protected $signature = 'l_lib:db:hahaha_command_db_table_enum_generate
         {--connection=mysql : 指定資料庫連線名稱}
         {--name=hahaha : 指定輸出名稱（namespace / 檔名）}
         {--database=codex : 指定資料庫名稱（schema）}
