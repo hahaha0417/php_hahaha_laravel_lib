@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
 
-#[Signature('app:hahaha-cache-ai-context {--output-dir=storage/app/ai-context : Directory used to store AI context cache files}')]
+#[Signature('l_lib:app:hahaha-cache-ai-context {--output-dir=storage/app/ai-context : Directory used to store AI context cache files}')]
 #[Description('為 AI 助手快取多份專案上下文檔案')]
 class hahaha_cache_ai_context extends Command
 {

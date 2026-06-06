@@ -9,7 +9,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
 use SplFileInfo;
 
-#[Signature('app:hahaha-cache-code-summary {--output= : Output file path}')]
+#[Signature('l_lib:app:hahaha-cache-code-summary {--output= : Output file path}')]
 #[Description('為 AI 助手快取精簡程式碼摘要')]
 class hahaha_cache_code_summary extends Command
 {

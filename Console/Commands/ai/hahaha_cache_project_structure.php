@@ -9,7 +9,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
 use SplFileInfo;
 
-#[Signature('app:hahaha-cache-project-structure {--output= : Output file path}')]
+#[Signature('l_lib:app:hahaha-cache-project-structure {--output= : Output file path}')]
 #[Description('為 AI 助手快取可讀的專案結構快照')]
 class hahaha_cache_project_structure extends Command
 {
