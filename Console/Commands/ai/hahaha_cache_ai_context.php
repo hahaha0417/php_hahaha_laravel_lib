@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
 
-#[Signature('l_lib:app:hahaha-cache-ai-context
+#[Signature('app:hahaha-cache-ai-context
     {--output-dir=storage/app/ai-context : Directory used to store AI context cache files}
-    {--with-tests : Generate tests.md only when it is explicitly needed}')]
+    {--with-tests : Generate tests.md only when it is explicitly needed}', aliases: ['l_lib:app:hahaha-cache-ai-context'])]
 #[Description('為 AI 助手快取多份專案上下文檔案')]
 class hahaha_cache_ai_context extends Command
 {
