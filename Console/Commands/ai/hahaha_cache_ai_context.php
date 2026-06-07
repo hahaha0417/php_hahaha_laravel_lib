@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Finder\SplFileInfo;
 use Throwable;
 
-#[Signature('l_lib:app:hahaha-cache-ai-context {--output-dir=storage/app/ai-context : Directory used to store AI context cache files}')]
+#[Signature('l_lib:app:hahaha-cache-ai-context
+    {--output-dir=storage/app/ai-context : Directory used to store AI context cache files}
+    {--with-tests : Generate tests.md only when it is explicitly needed}')]
 #[Description('為 AI 助手快取多份專案上下文檔案')]
 class hahaha_cache_ai_context extends Command
 {
@@ -49,7 +51,7 @@ class hahaha_cache_ai_context extends Command
         $this->writeFile($output_dir_, 'database-schema.md', $this->renderDatabaseSchemaSummary());
         $this->writeFile($output_dir_, 'config.md', $this->renderConfigSummary());
         $this->writeFile($output_dir_, 'packages.md', $this->renderPackageSummary());
-        $this->writeFile($output_dir_, 'tests.md', $this->renderTestSummary());
+        $this->testsSummaryWrite_($output_dir_);
         $this->writeFile($output_dir_, 'recent-changes.md', $this->renderRecentChangesSummary());
         $this->writeFile($output_dir_, 'ownership-map.md', $this->renderOwnershipMap());
         $this->writeFile($output_dir_, 'php-symbols.md', $this->renderPhpSymbolsSummary());
@@ -184,6 +186,21 @@ class hahaha_cache_ai_context extends Command
         }
 
         return implode(PHP_EOL, $lines_).PHP_EOL;
+    }
+
+    private function testsSummaryWrite_(string $output_dir_): void
+    {
+        $tests_summary_path_ = $output_dir_.DIRECTORY_SEPARATOR.'tests.md';
+
+        if (! (bool) $this->option('with-tests')) {
+            if ($this->files->exists($tests_summary_path_)) {
+                $this->files->delete($tests_summary_path_);
+            }
+
+            return;
+        }
+
+        $this->writeFile($output_dir_, 'tests.md', $this->renderTestSummary());
     }
 
     private function renderRecentChangesSummary(): string
