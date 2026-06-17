@@ -5,7 +5,7 @@ php artisan app:hahaha-cache-project-structure
 # 跑這兩個就好
 php artisan app:hahaha-cache-node-project-analysis
 php artisan app:hahaha-cache-work-target-analysis
-php artisan db:hahaha_command_db_table_enum_generate
+php artisan l_lib:db:hahaha_command_db_table_enum_generate
 
 php artisan l_lib:git:clone --url="https://github.com/hahaha0417/php_hahahalib.git" --path="library\php_hahahalib"
 php artisan l_lib:git:clone --url="https://github.com/hahaha0417/php_hahaha_laravel_lib.git" --path="library\hahaha_laravel_lib"
