@@ -9,6 +9,7 @@ use L_Lib\Console\Commands\ai\hahaha_cache_ai_context;
 use L_Lib\Console\Commands\ai\hahaha_cache_code_summary;
 use L_Lib\Console\Commands\ai\hahaha_cache_project_structure;
 use L_Lib\Console\Commands\ai\node\hahaha_cache_node_project_analysis;
+use L_Lib\Console\Commands\ai\node\hahaha_cache_work_target_analysis;
 use L_Lib\Console\Commands\db\hahaha_command_create_database;
 use L_Lib\Console\Commands\db\hahaha_command_db_table_enum_generate;
 use L_Lib\Console\Commands\db\hahaha_command_delete_database;
@@ -33,6 +34,7 @@ class hahaha_laravel_lib_service_provider extends ServiceProvider
                 hahaha_cache_code_summary::class,
                 hahaha_cache_project_structure::class,
                 hahaha_cache_node_project_analysis::class,
+                hahaha_cache_work_target_analysis::class,
                 hahaha_command_db_table_enum_generate::class,
                 hahaha_command_create_database::class,
                 hahaha_command_delete_database::class,
