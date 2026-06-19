@@ -7,16 +7,16 @@ use Illuminate\Console\Command;
 
 class hahaha_command_db_table_enum_generate extends Command
 {
-    protected $signature = 'l_lib:db:hahaha_command_db_table_enum_generate
+    public $signature = 'l_lib:db:hahaha_command_db_table_enum_generate
         {--connection=mysql : 指定資料庫連線名稱}
         {--name=hahaha : 指定輸出名稱（namespace / 檔名）}
         {--database=codex : 指定資料庫名稱（schema）}
         {--force : 覆蓋既有檔案}';
 
-    protected $description = '產生指定資料庫的資料表 enum 與資料表欄位 enum（PSR-4 結構）';
+    public $description = '產生指定資料庫的資料表 enum 與資料表欄位 enum（PSR-4 結構）';
 
     public function __construct(
-        private readonly hahaha_service_db_table_enum_generate $hahaha_service_db_table_enum_generate_,
+        public readonly hahaha_service_db_table_enum_generate $hahaha_service_db_table_enum_generate_,
     ) {
         parent::__construct();
     }
@@ -40,7 +40,7 @@ class hahaha_command_db_table_enum_generate extends Command
             return self::FAILURE;
         }
 
-        $result_ = $this->hahaha_service_db_table_enum_generate_->generate(
+        $result_ = $this->hahaha_service_db_table_enum_generate_->Table_Enum_Generate(
             connection_: $connection_,
             name_argument_: $name_argument_,
             database_name_: $database_name_,

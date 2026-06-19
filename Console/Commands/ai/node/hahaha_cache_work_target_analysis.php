@@ -16,15 +16,15 @@ use SplFileInfo;
 #[Description('為 Codex 產生以需求定位為主的精簡工作目標分析摘要')]
 class hahaha_cache_work_target_analysis extends Command
 {
-    private const DEFAULT_OUTPUT_DIR = 'storage/app/ai-context/node';
+    public const DEFAULT_OUTPUT_DIR = 'storage/app/ai-context/node';
 
-    private const MARKDOWN_FILE = 'work-target-analysis.md';
+    public const MARKDOWN_FILE = 'work-target-analysis.md';
 
-    private const JSON_FILE = 'work-target-analysis.json';
+    public const JSON_FILE = 'work-target-analysis.json';
 
-    private const META_FILE = '.hahaha_cache_work_target_analysis.meta.json';
+    public const META_FILE = '.hahaha_cache_work_target_analysis.meta.json';
 
-    private const EXCLUDED_PREFIXES = [
+    public const EXCLUDED_PREFIXES = [
         '.codex/',
         '.git/',
         'bootstrap/cache/',
@@ -38,7 +38,7 @@ class hahaha_cache_work_target_analysis extends Command
         'vendor/',
     ];
 
-    private const STATIC_INCLUDED_PREFIXES = [
+    public const STATIC_INCLUDED_PREFIXES = [
         'app/',
         'bootstrap/',
         'code/',
@@ -52,10 +52,10 @@ class hahaha_cache_work_target_analysis extends Command
         'tool/',
     ];
 
-    private readonly string $base_path_normalized_;
+    public readonly string $base_path_normalized_;
 
     public function __construct(
-        private readonly Filesystem $files,
+        public readonly Filesystem $files_,
     ) {
         parent::__construct();
         $this->base_path_normalized_ = str_replace('\\', '/', base_path());
@@ -63,31 +63,31 @@ class hahaha_cache_work_target_analysis extends Command
 
     public function handle(): int
     {
-        $output_dir_ = $this->resolveOutputDir((string) $this->option('output-dir'));
-        $this->files->ensureDirectoryExists($output_dir_);
+        $output_dir_ = $this->Resolve_Output_Dir((string) $this->option('output-dir'));
+        $this->files_->ensureDirectoryExists($output_dir_);
 
-        $files_ = $this->collectRelevantFiles($output_dir_);
-        $fingerprint_ = $this->buildFingerprint($files_);
+        $files_ = $this->Collect_Relevant_Files($output_dir_);
+        $fingerprint_ = $this->Build_Fingerprint($files_);
 
-        if (! (bool) $this->option('force') && $this->isFingerprintUnchanged($output_dir_, $fingerprint_)) {
-            $this->components->info(sprintf('程式碼未變更，略過重建：%s', $this->displayPath($output_dir_)));
+        if (! (bool) $this->option('force') && $this->Is_Fingerprint_Unchanged($output_dir_, $fingerprint_)) {
+            $this->components->info(sprintf('程式碼未變更，略過重建：%s', $this->Display_Path($output_dir_)));
 
             return self::SUCCESS;
         }
 
-        $analysis_ = $this->analysisResolve_($files_);
+        $analysis_ = $this->Analysis_Resolve($files_);
 
-        $this->writeFile(
+        $this->Write_File(
             $output_dir_.DIRECTORY_SEPARATOR.self::MARKDOWN_FILE,
-            $this->markdownRender_($analysis_)
+            $this->Markdown_Render($analysis_)
         );
-        $this->writeFile(
+        $this->Write_File(
             $output_dir_.DIRECTORY_SEPARATOR.self::JSON_FILE,
             json_encode($analysis_, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT).PHP_EOL
         );
-        $this->metaWrite_($output_dir_, $fingerprint_, $analysis_);
+        $this->Meta_Write($output_dir_, $fingerprint_, $analysis_);
 
-        $this->components->info(sprintf('Work target 分析快取已輸出：%s', $this->displayPath($output_dir_)));
+        $this->components->info(sprintf('Work target 分析快取已輸出：%s', $this->Display_Path($output_dir_)));
 
         return self::SUCCESS;
     }
@@ -116,18 +116,18 @@ class hahaha_cache_work_target_analysis extends Command
      *     }>
      * }
      */
-    private function analysisResolve_(array $files_): array
+    public function Analysis_Resolve(array $files): array
     {
-        $route_index_ = $this->routeIndexResolve_();
+            $route_index_ = $this->Route_Index_Resolve();
         $targets_by_key_ = [];
 
-        foreach ($files_ as $file_) {
-            $target_reference_ = $this->targetReferenceResolve_($file_['path']);
+        foreach ($files as $file_) {
+            $target_reference_ = $this->Target_Reference_Resolve($file_['path']);
             if ($target_reference_ === null) {
                 continue;
             }
 
-            $file_role_ = $this->fileRoleResolve_($file_['path']);
+            $file_role_ = $this->File_Role_Resolve($file_['path']);
             if ($file_role_ === null) {
                 continue;
             }
@@ -153,7 +153,7 @@ class hahaha_cache_work_target_analysis extends Command
                 ];
             }
 
-            if ($this->primaryPathPriorityResolve_($file_role_) < $this->primaryPathPriorityResolveFromPath_($targets_by_key_[$target_key_]['primary_path'])) {
+            if ($this->Primary_Path_Priority_Resolve($file_role_) < $this->Primary_Path_Priority_Resolve_From_Path($targets_by_key_[$target_key_]['primary_path'])) {
                 $targets_by_key_[$target_key_]['primary_path'] = $target_reference_['primary_path'];
             }
 
@@ -162,7 +162,7 @@ class hahaha_cache_work_target_analysis extends Command
             $targets_by_key_[$target_key_]['files'][$file_role_][] = $file_['path'];
 
             if ($file_role_ === 'controllers') {
-                $controller_class_ = $this->controllerClassResolve_($file_['path']);
+                $controller_class_ = $this->Controller_Class_Resolve($file_['path']);
                 if ($controller_class_ !== null) {
                     $targets_by_key_[$target_key_]['controller_classes'][] = $controller_class_;
                 }
@@ -191,7 +191,7 @@ class hahaha_cache_work_target_analysis extends Command
 
             $target_['routes'] = $routes_;
             $target_['route_count'] = count($routes_);
-            $target_['open_order'] = $this->openOrderResolve_($target_['files']);
+            $target_['open_order'] = $this->Open_Order_Resolve($target_['files']);
 
             unset($target_['controller_classes']);
         }
@@ -222,7 +222,7 @@ class hahaha_cache_work_target_analysis extends Command
     /**
      * @return array<string, array<int, array{methods: string, uri: string, name: string, action: string}>>
      */
-    private function routeIndexResolve_(): array
+    public function Route_Index_Resolve(): array
     {
         $index_ = [];
 
@@ -247,9 +247,9 @@ class hahaha_cache_work_target_analysis extends Command
         return $index_;
     }
 
-    private function fileRoleResolve_(string $path_): ?string
+    public function File_Role_Resolve(string $path): ?string
     {
-        $normalized_path_ = str_replace('\\', '/', $path_);
+        $normalized_path_ = str_replace('\\', '/', $path);
         $basename_ = basename($normalized_path_);
 
         if (str_ends_with($basename_, '.blade.php')) {
@@ -286,9 +286,9 @@ class hahaha_cache_work_target_analysis extends Command
     /**
      * @return array{key: string, primary_path: string}|null
      */
-    private function targetReferenceResolve_(string $path_): ?array
+    public function Target_Reference_Resolve(string $path): ?array
     {
-        $normalized_path_ = str_replace('\\', '/', $path_);
+        $normalized_path_ = str_replace('\\', '/', $path);
         $segments_ = explode('/', $normalized_path_);
         $basename_ = basename($normalized_path_);
 
@@ -344,15 +344,15 @@ class hahaha_cache_work_target_analysis extends Command
         return null;
     }
 
-    private function controllerClassResolve_(string $path_): ?string
+    public function Controller_Class_Resolve(string $path): ?string
     {
-        $absolute_path_ = base_path($path_);
+        $absolute_path_ = base_path($path);
 
-        if (! $this->files->exists($absolute_path_)) {
+        if (! $this->files_->exists($absolute_path_)) {
             return null;
         }
 
-        $contents_ = $this->files->get($absolute_path_);
+        $contents_ = $this->files_->get($absolute_path_);
 
         if (preg_match('/^namespace\s+([^;]+);/m', $contents_, $namespace_match_) !== 1) {
             return null;
@@ -376,14 +376,14 @@ class hahaha_cache_work_target_analysis extends Command
      * }  $files_
      * @return array<int, string>
      */
-    private function openOrderResolve_(array $files_): array
+    public function Open_Order_Resolve(array $files): array
     {
         return array_values(array_merge(
-            $files_['routes'],
-            $files_['controllers'],
-            $files_['configs'],
-            $files_['views'],
-            $files_['tests']
+            $files['routes'],
+            $files['controllers'],
+            $files['configs'],
+            $files['views'],
+            $files['tests']
         ));
     }
 
@@ -410,19 +410,19 @@ class hahaha_cache_work_target_analysis extends Command
      *     }>
      * } $analysis_
      */
-    private function markdownRender_(array $analysis_): string
+    public function Markdown_Render(array $analysis): string
     {
         $lines_ = [
             '# Work Target Analysis',
             '',
-            'Generated at: '.$analysis_['generated_at'],
-            '- Target count: '.$analysis_['summary']['target_count'],
-            '- Targets with routes: '.$analysis_['summary']['target_with_routes_count'],
-            '- Targets with tests: '.$analysis_['summary']['target_with_tests_count'],
+            'Generated at: '.$analysis['generated_at'],
+            '- Target count: '.$analysis['summary']['target_count'],
+            '- Targets with routes: '.$analysis['summary']['target_with_routes_count'],
+            '- Targets with tests: '.$analysis['summary']['target_with_tests_count'],
             '',
         ];
 
-        foreach ($analysis_['targets'] as $target_) {
+        foreach ($analysis['targets'] as $target_) {
             $lines_[] = '## '.$target_['key'];
             $lines_[] = '';
             $lines_[] = '- Primary path: '.$target_['primary_path'];
@@ -455,9 +455,9 @@ class hahaha_cache_work_target_analysis extends Command
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function primaryPathPriorityResolve_(string $file_role_): int
+    public function Primary_Path_Priority_Resolve(string $file_role): int
     {
-        return match ($file_role_) {
+        return match ($file_role) {
             'routes' => 1,
             'controllers' => 2,
             'configs' => 3,
@@ -467,23 +467,23 @@ class hahaha_cache_work_target_analysis extends Command
         };
     }
 
-    private function primaryPathPriorityResolveFromPath_(string $path_): int
+    public function Primary_Path_Priority_Resolve_From_Path(string $path): int
     {
-        return $this->primaryPathPriorityResolve_($this->fileRoleResolve_($path_) ?? 'others');
+        return $this->Primary_Path_Priority_Resolve($this->File_Role_Resolve($path) ?? 'others');
     }
 
     /**
      * @return array<int, array{path: string, size: int, modified_at: string, extension: string}>
      */
-    private function collectRelevantFiles(string $output_dir_): array
+    public function Collect_Relevant_Files(string $output_dir): array
     {
-        $output_dir_normalized_ = str_replace('\\', '/', rtrim($output_dir_, '\\/'));
+        $output_dir_normalized_ = str_replace('\\', '/', rtrim($output_dir, '\\/'));
         $files_ = [];
 
-        foreach ($this->files->allFiles(base_path()) as $file_) {
-            $path_ = $this->relativePath($file_);
+        foreach ($this->files_->allFiles(base_path()) as $file_) {
+            $path_ = $this->Relative_Path($file_);
 
-            if (! $this->isRelevantPath($path_)) {
+            if (! $this->Is_Relevant_Path($path_)) {
                 continue;
             }
 
@@ -505,51 +505,51 @@ class hahaha_cache_work_target_analysis extends Command
         return $files_;
     }
 
-    private function isRelevantPath(string $path_): bool
+    public function Is_Relevant_Path(string $path): bool
     {
         foreach (self::EXCLUDED_PREFIXES as $excluded_prefix_) {
-            if (str_starts_with($path_, $excluded_prefix_)) {
+            if (str_starts_with($path, $excluded_prefix_)) {
                 return false;
             }
         }
 
         foreach (self::STATIC_INCLUDED_PREFIXES as $included_prefix_) {
-            if (str_starts_with($path_, $included_prefix_)) {
+            if (str_starts_with($path, $included_prefix_)) {
                 return true;
             }
         }
 
-        return in_array($path_, ['composer.json', 'package.json', 'phpunit.xml', 'artisan'], true);
+        return in_array($path, ['composer.json', 'package.json', 'phpunit.xml', 'artisan'], true);
     }
 
     /**
      * @param  array<int, array{path: string, size: int, modified_at: string, extension: string}>  $files_
      */
-    private function buildFingerprint(array $files_): string
+    public function Build_Fingerprint(array $files): string
     {
         $parts_ = array_map(static fn (array $file_): string => sprintf(
             '%s|%s|%d',
             $file_['path'],
             $file_['modified_at'],
             $file_['size']
-        ), $files_);
+        ), $files);
 
         sort($parts_);
 
         return hash('sha256', implode("\n", $parts_));
     }
 
-    private function isFingerprintUnchanged(string $output_dir_, string $fingerprint_): bool
+    public function Is_Fingerprint_Unchanged(string $output_dir, string $fingerprint): bool
     {
-        $meta_path_ = rtrim($output_dir_, '\\/').DIRECTORY_SEPARATOR.self::META_FILE;
+        $meta_path_ = rtrim($output_dir, '\\/').DIRECTORY_SEPARATOR.self::META_FILE;
 
-        if (! $this->files->exists($meta_path_)) {
+        if (! $this->files_->exists($meta_path_)) {
             return false;
         }
 
-        $meta_ = json_decode($this->files->get($meta_path_), true);
+        $meta_ = json_decode($this->files_->get($meta_path_), true);
 
-        return is_array($meta_) && ($meta_['fingerprint'] ?? null) === $fingerprint_;
+        return is_array($meta_) && ($meta_['fingerprint'] ?? null) === $fingerprint;
     }
 
     /**
@@ -575,13 +575,13 @@ class hahaha_cache_work_target_analysis extends Command
      *     }>
      * } $analysis_
      */
-    private function metaWrite_(string $output_dir_, string $fingerprint_, array $analysis_): void
+    public function Meta_Write(string $output_dir, string $fingerprint, array $analysis): void
     {
-        $meta_path_ = rtrim($output_dir_, '\\/').DIRECTORY_SEPARATOR.self::META_FILE;
+        $meta_path_ = rtrim($output_dir, '\\/').DIRECTORY_SEPARATOR.self::META_FILE;
 
-        $this->files->put($meta_path_, json_encode([
-            'fingerprint' => $fingerprint_,
-            'updated_at' => $analysis_['generated_at'],
+        $this->files_->put($meta_path_, json_encode([
+            'fingerprint' => $fingerprint,
+            'updated_at' => $analysis['generated_at'],
             'files' => [
                 'markdown' => self::MARKDOWN_FILE,
                 'json' => self::JSON_FILE,
@@ -589,34 +589,34 @@ class hahaha_cache_work_target_analysis extends Command
         ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT).PHP_EOL);
     }
 
-    private function writeFile(string $path_, string $contents_): void
+    public function Write_File(string $path, string $contents): void
     {
-        if ($this->files->exists($path_) && $this->files->get($path_) === $contents_) {
+        if ($this->files_->exists($path) && $this->files_->get($path) === $contents) {
             return;
         }
 
-        $this->files->put($path_, $contents_);
+        $this->files_->put($path, $contents);
     }
 
-    private function resolveOutputDir(string $output_dir_): string
+    public function Resolve_Output_Dir(string $output_dir): string
     {
-        $normalized_ = trim($output_dir_);
+        $normalized_ = trim($output_dir);
 
         if ($normalized_ === '') {
             $normalized_ = self::DEFAULT_OUTPUT_DIR;
         }
 
-        return $this->isAbsolutePath($normalized_) ? $normalized_ : base_path($normalized_);
+        return $this->Is_Absolute_Path($normalized_) ? $normalized_ : base_path($normalized_);
     }
 
-    private function relativePath(SplFileInfo $file_): string
+    public function Relative_Path(SplFileInfo $file): string
     {
-        return ltrim(str_replace($this->base_path_normalized_, '', str_replace('\\', '/', $file_->getPathname())), '/');
+        return ltrim(str_replace($this->base_path_normalized_, '', str_replace('\\', '/', $file->getPathname())), '/');
     }
 
-    private function displayPath(string $path_): string
+    public function Display_Path(string $path): string
     {
-        $normalized_path_ = str_replace('\\', '/', $path_);
+        $normalized_path_ = str_replace('\\', '/', $path);
 
         if (str_starts_with($normalized_path_, $this->base_path_normalized_.'/')) {
             return substr($normalized_path_, strlen($this->base_path_normalized_) + 1);
@@ -625,8 +625,8 @@ class hahaha_cache_work_target_analysis extends Command
         return $normalized_path_;
     }
 
-    private function isAbsolutePath(string $path_): bool
+    public function Is_Absolute_Path(string $path): bool
     {
-        return preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/]{2}|\/)/', $path_) === 1;
+        return preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/]{2}|\/)/', $path) === 1;
     }
 }

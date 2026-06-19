@@ -10,14 +10,14 @@ use Throwable;
 
 class hahaha_command_create_database extends Command
 {
-    private const TEMP_CONNECTION_NAME = 'hahaha_install_database_create_';
+    public const TEMP_CONNECTION_NAME = 'hahaha_install_database_create_';
 
-    protected $signature = 'l_lib:db:create_database
+    public $signature = 'l_lib:db:create_database
         {--database= : The database name to create}
         {--connection= : The database connection name to use}
         {--force=2 : 1 forces creation, 2 requires confirmation when the database already exists}';
 
-    protected $description = 'Create the configured database using the Laravel database configuration';
+    public $description = 'Create the configured database using the Laravel database configuration';
 
     public function handle(): int
     {
@@ -47,9 +47,9 @@ class hahaha_command_create_database extends Command
 
         try {
             return match ($database_connection_) {
-                'sqlite' => $this->sqlite_database_create_($connection_config_),
-                'mysql', 'mariadb', 'pgsql', 'sqlsrv' => $this->server_database_create_($connection_config_),
-                default => $this->database_connection_unsupported_($database_connection_),
+                'sqlite' => $this->Sqlite_Database_Create($connection_config_),
+                'mysql', 'mariadb', 'pgsql', 'sqlsrv' => $this->Server_Database_Create($connection_config_),
+                default => $this->Database_Connection_Unsupported($database_connection_),
             };
         } catch (Throwable $throwable_) {
             $this->components->error($throwable_->getMessage());
@@ -58,9 +58,9 @@ class hahaha_command_create_database extends Command
         }
     }
 
-    private function database_connection_unsupported_(string $database_connection_): int
+    public function Database_Connection_Unsupported(string $database_connection): int
     {
-        $this->components->error('Unsupported DB_CONNECTION value: '.$database_connection_);
+        $this->components->error('Unsupported DB_CONNECTION value: '.$database_connection);
 
         return self::FAILURE;
     }
@@ -68,9 +68,9 @@ class hahaha_command_create_database extends Command
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function sqlite_database_create_(array $connection_config_): int
+    public function Sqlite_Database_Create(array $connection_config): int
     {
-        $database_path_input_ = (string) ($connection_config_['database'] ?? '');
+        $database_path_input_ = (string) ($connection_config['database'] ?? '');
 
         if ($database_path_input_ === '') {
             $this->components->error('DB_DATABASE must be set for sqlite connections.');
@@ -84,26 +84,26 @@ class hahaha_command_create_database extends Command
             return self::SUCCESS;
         }
 
-        $database_path_ = $this->sqlite_database_path_resolve_($database_path_input_);
+        $database_path_ = $this->Sqlite_Database_Path_Resolve($database_path_input_);
         $database_directory_ = dirname($database_path_);
 
         if (! File::isDirectory($database_directory_)) {
             File::makeDirectory($database_directory_, 0755, true);
         }
 
-        $connection_config_['database'] = $database_path_;
+        $connection_config['database'] = $database_path_;
 
-        if ($this->sqlite_database_exists_($database_path_)) {
+        if ($this->Sqlite_Database_Exists($database_path_)) {
             $this->components->warn('Database already exists: '.$database_path_);
 
             return self::FAILURE;
         }
 
-        if (! $this->database_creation_should_continue_($database_path_)) {
+        if (! $this->Database_Creation_Should_Continue($database_path_)) {
             return self::FAILURE;
         }
 
-        $this->database_create_with_schema_builder_($connection_config_, $database_path_);
+        $this->Database_Create_With_Schema_Builder($connection_config, $database_path_);
 
         $this->components->info('Database created at '.$database_path_);
 
@@ -113,9 +113,9 @@ class hahaha_command_create_database extends Command
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function server_database_create_(array $connection_config_): int
+    public function Server_Database_Create(array $connection_config): int
     {
-        $database_name_ = trim((string) ($connection_config_['database'] ?? ''));
+        $database_name_ = trim((string) ($connection_config['database'] ?? ''));
 
         if ($database_name_ === '') {
             $this->components->error('DB_DATABASE must be set.');
@@ -123,19 +123,19 @@ class hahaha_command_create_database extends Command
             return self::FAILURE;
         }
 
-        $admin_connection_config_ = $this->server_database_admin_connection_config_build_($connection_config_);
+        $admin_connection_config_ = $this->Server_Database_Admin_Connection_Config_Build($connection_config);
 
-        if ($this->server_database_exists_($admin_connection_config_, $database_name_)) {
+        if ($this->Server_Database_Exists($admin_connection_config_, $database_name_)) {
             $this->components->warn('Database already exists: '.$database_name_);
 
             return self::FAILURE;
         }
 
-        if (! $this->database_creation_should_continue_($database_name_)) {
+        if (! $this->Database_Creation_Should_Continue($database_name_)) {
             return self::FAILURE;
         }
 
-        $this->database_create_with_schema_builder_($admin_connection_config_, $database_name_);
+        $this->Database_Create_With_Schema_Builder($admin_connection_config_, $database_name_);
 
         $this->components->info('Database created: '.$database_name_);
 
@@ -145,28 +145,28 @@ class hahaha_command_create_database extends Command
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function database_create_with_schema_builder_(array $connection_config_, string $database_name_): void
+    public function Database_Create_With_Schema_Builder(array $connection_config, string $database_name): void
     {
         config([
-            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config_,
+            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config,
         ]);
 
         DB::purge(self::TEMP_CONNECTION_NAME);
 
         try {
-            Schema::connection(self::TEMP_CONNECTION_NAME)->createDatabase($database_name_);
+            Schema::connection(self::TEMP_CONNECTION_NAME)->createDatabase($database_name);
         } finally {
             DB::purge(self::TEMP_CONNECTION_NAME);
         }
     }
 
-    private function database_creation_should_continue_(string $database_name_): bool
+    public function Database_Creation_Should_Continue(string $database_name): bool
     {
         if ((string) $this->option('force') === '1') {
             return true;
         }
 
-        if (! $this->confirm('Do you want to create database ['.$database_name_.']?', false)) {
+        if (! $this->confirm('Do you want to create database ['.$database_name.']?', false)) {
             $this->components->info('Database creation cancelled.');
 
             return false;
@@ -179,48 +179,48 @@ class hahaha_command_create_database extends Command
      * @param  array<string, mixed>  $connection_config_
      * @return array<string, mixed>
      */
-    private function server_database_admin_connection_config_build_(array $connection_config_): array
+    public function Server_Database_Admin_Connection_Config_Build(array $connection_config): array
     {
-        $database_driver_ = (string) ($connection_config_['driver'] ?? '');
+        $database_driver_ = (string) ($connection_config['driver'] ?? '');
 
         return match ($database_driver_) {
             'mysql', 'mariadb' => [
-                ...$connection_config_,
+                ...$connection_config,
                 'database' => null,
             ],
             'pgsql' => [
-                ...$connection_config_,
-                'database' => $connection_config_['admin_database'] ?? 'postgres',
+                ...$connection_config,
+                'database' => $connection_config['admin_database'] ?? 'postgres',
             ],
             'sqlsrv' => [
-                ...$connection_config_,
-                'database' => $connection_config_['admin_database'] ?? 'master',
+                ...$connection_config,
+                'database' => $connection_config['admin_database'] ?? 'master',
             ],
-            default => $connection_config_,
+            default => $connection_config,
         };
     }
 
-    private function sqlite_database_path_resolve_(string $database_path_input_): string
+    public function Sqlite_Database_Path_Resolve(string $database_path_input): string
     {
-        if ($this->path_is_absolute_($database_path_input_)) {
-            return $database_path_input_;
+        if ($this->Path_Is_Absolute($database_path_input)) {
+            return $database_path_input;
         }
 
-        return base_path($database_path_input_);
+        return base_path($database_path_input);
     }
 
-    private function sqlite_database_exists_(string $database_path_): bool
+    public function Sqlite_Database_Exists(string $database_path): bool
     {
-        return File::exists($database_path_);
+        return File::exists($database_path);
     }
 
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function server_database_exists_(array $connection_config_, string $database_name_): bool
+    public function Server_Database_Exists(array $connection_config, string $database_name): bool
     {
         config([
-            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config_,
+            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config,
         ]);
 
         DB::purge(self::TEMP_CONNECTION_NAME);
@@ -233,7 +233,7 @@ class hahaha_command_create_database extends Command
                     continue;
                 }
 
-                if (strtolower((string) ($schema_['name'] ?? '')) === strtolower($database_name_)) {
+                if (strtolower((string) ($schema_['name'] ?? '')) === strtolower($database_name)) {
                     return true;
                 }
             }
@@ -244,17 +244,17 @@ class hahaha_command_create_database extends Command
         }
     }
 
-    private function path_is_absolute_(string $path_input_): bool
+    public function Path_Is_Absolute(string $path_input): bool
     {
-        if ($path_input_ === '') {
+        if ($path_input === '') {
             return false;
         }
 
-        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path_input_) === 1) {
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path_input) === 1) {
             return true;
         }
 
-        return str_starts_with($path_input_, '/')
-            || str_starts_with($path_input_, '\\');
+        return str_starts_with($path_input, '/')
+            || str_starts_with($path_input, '\\');
     }
 }

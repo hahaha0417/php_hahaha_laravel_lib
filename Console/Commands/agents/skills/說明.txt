@@ -1,0 +1,12 @@
+agents skills command 目錄說明
+
+- common
+  - 放 command 共用 option、path、json 解析邏輯
+- trello / jira / github / outlook / gmail / line
+  - 各 provider 一支主 command
+
+整理原則
+
+- 每支 command 只負責 command input 解析與 service 呼叫
+- 實際外部 API 行為全部交給 service
+- command output 一律用 JSON，方便 CLI 與自動化流程串接

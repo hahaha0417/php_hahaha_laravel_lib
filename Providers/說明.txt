@@ -1,0 +1,12 @@
+provider 目錄說明
+
+- 根目錄 provider
+  - 放主 service provider，負責彙整其他 provider 類別
+- agents/skills
+  - 放 agents skills 相關 provider 註冊整理
+
+整理原則
+
+- 主 provider 只保留高層協調
+- 細分領域的 commands 或 services 註冊，移到對應子資料夾 provider
+- provider function 保持單一用途，方便後續擴充

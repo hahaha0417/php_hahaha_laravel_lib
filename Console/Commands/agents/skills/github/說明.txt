@@ -1,0 +1,4 @@
+github command 說明
+
+- `hahaha_command_agents_skills_github`
+  - 提供 repo、issue、dashboard、contents、image commit 等常用 CLI 操作

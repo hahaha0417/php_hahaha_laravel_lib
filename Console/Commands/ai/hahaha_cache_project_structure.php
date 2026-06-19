@@ -13,10 +13,10 @@ use SplFileInfo;
 #[Description('為 AI 助手快取可讀的專案結構快照')]
 class hahaha_cache_project_structure extends Command
 {
-    private const DEFAULT_OUTPUT = 'storage/app/ai-context/project-structure.md';
-    private const META_SUFFIX = '.meta.json';
+    public const DEFAULT_OUTPUT = 'storage/app/ai-context/project-structure.md';
+    public const META_SUFFIX = '.meta.json';
 
-    private const EXCLUDED_PREFIXES = [
+    public const EXCLUDED_PREFIXES = [
         '.git/',
         'bootstrap/cache/',
         'node_modules/',
@@ -28,9 +28,9 @@ class hahaha_cache_project_structure extends Command
         'vendor/',
     ];
 
-    private readonly string $base_path_normalized_;
+    public readonly string $base_path_normalized_;
 
-    public function __construct(private readonly Filesystem $files)
+    public function __construct(public readonly Filesystem $files_)
     {
         parent::__construct();
         $this->base_path_normalized_ = str_replace('\\', '/', base_path());
@@ -38,13 +38,13 @@ class hahaha_cache_project_structure extends Command
 
     public function handle(): int
     {
-        $output_path_ = $this->resolveOutputPath((string) $this->option('output'));
-        $scan_result_ = $this->collectPathsAndFingerprintParts();
+        $output_path_ = $this->Resolve_Output_Path((string) $this->option('output'));
+        $scan_result_ = $this->Collect_Paths_And_Fingerprint_Parts();
         $paths_ = $scan_result_['paths'];
         $fingerprint_ = hash('sha256', implode("\n", $scan_result_['parts']));
 
-        if ($this->isFingerprintUnchanged($output_path_, $fingerprint_)) {
-            $this->components->info(sprintf('程式碼未變更，略過重建：%s', $this->displayPath($output_path_)));
+        if ($this->Is_Fingerprint_Unchanged($output_path_, $fingerprint_)) {
+            $this->components->info(sprintf('程式碼未變更，略過重建：%s', $this->Display_Path($output_path_)));
 
             return self::SUCCESS;
         }
@@ -65,24 +65,24 @@ class hahaha_cache_project_structure extends Command
         $lines_[] = '```';
         $lines_[] = '';
 
-        $this->files->put($output_path_, implode(PHP_EOL, $lines_));
-        $this->writeFingerprint($output_path_, $fingerprint_);
+        $this->files_->put($output_path_, implode(PHP_EOL, $lines_));
+        $this->Write_Fingerprint($output_path_, $fingerprint_);
 
-        $this->components->info(sprintf('專案結構快照已輸出：%s', $this->displayPath($output_path_)));
+        $this->components->info(sprintf('專案結構快照已輸出：%s', $this->Display_Path($output_path_)));
 
         return self::SUCCESS;
     }
 
     /** @return array{paths: array<int, string>, parts: array<int, string>} */
-    private function collectPathsAndFingerprintParts(): array
+    public function Collect_Paths_And_Fingerprint_Parts(): array
     {
         $paths_ = [];
         $parts_ = [];
 
-        foreach ($this->files->allFiles(base_path()) as $file_) {
-            $path_ = $this->relativePath($file_);
+        foreach ($this->files_->allFiles(base_path()) as $file_) {
+            $path_ = $this->Relative_Path($file_);
 
-            if ($this->isExcluded($path_)) {
+            if ($this->Is_Excluded($path_)) {
                 continue;
             }
 
@@ -99,9 +99,9 @@ class hahaha_cache_project_structure extends Command
         ];
     }
 
-    private function isExcluded(string $path_): bool
+    public function Is_Excluded(string $path): bool
     {
-        $normalized_ = str_replace('\\', '/', $path_);
+        $normalized_ = str_replace('\\', '/', $path);
 
         foreach (self::EXCLUDED_PREFIXES as $excluded_) {
             if (str_starts_with($normalized_, $excluded_)) {
@@ -112,55 +112,55 @@ class hahaha_cache_project_structure extends Command
         return false;
     }
 
-    private function isFingerprintUnchanged(string $output_path_, string $fingerprint_): bool
+    public function Is_Fingerprint_Unchanged(string $output_path, string $fingerprint): bool
     {
-        $meta_path_ = $output_path_.self::META_SUFFIX;
+        $meta_path_ = $output_path.self::META_SUFFIX;
 
-        if (! $this->files->exists($output_path_) || ! $this->files->exists($meta_path_)) {
+        if (! $this->files_->exists($output_path) || ! $this->files_->exists($meta_path_)) {
             return false;
         }
 
-        $meta_ = json_decode($this->files->get($meta_path_), true);
+        $meta_ = json_decode($this->files_->get($meta_path_), true);
 
-        return is_array($meta_) && ($meta_['fingerprint'] ?? null) === $fingerprint_;
+        return is_array($meta_) && ($meta_['fingerprint'] ?? null) === $fingerprint;
     }
 
-    private function writeFingerprint(string $output_path_, string $fingerprint_): void
+    public function Write_Fingerprint(string $output_path, string $fingerprint): void
     {
-        $meta_path_ = $output_path_.self::META_SUFFIX;
+        $meta_path_ = $output_path.self::META_SUFFIX;
 
-        $this->files->put($meta_path_, json_encode([
-            'fingerprint' => $fingerprint_,
+        $this->files_->put($meta_path_, json_encode([
+            'fingerprint' => $fingerprint,
             'updated_at' => Carbon::now()->toDateTimeString(),
         ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT).PHP_EOL);
     }
 
-    private function resolveOutputPath(string $output_path_): string
+    public function Resolve_Output_Path(string $output_path): string
     {
-        $normalized_ = trim($output_path_);
+        $normalized_ = trim($output_path);
 
         if ($normalized_ === '') {
             $normalized_ = self::DEFAULT_OUTPUT;
         }
 
-        return $this->isAbsolutePath($normalized_) ? $normalized_ : base_path($normalized_);
+        return $this->Is_Absolute_Path($normalized_) ? $normalized_ : base_path($normalized_);
     }
 
-    private function relativePath(SplFileInfo $file_): string
+    public function Relative_Path(SplFileInfo $file): string
     {
-        return ltrim(str_replace($this->base_path_normalized_, '', str_replace('\\', '/', $file_->getPathname())), '/');
+        return ltrim(str_replace($this->base_path_normalized_, '', str_replace('\\', '/', $file->getPathname())), '/');
     }
 
-    private function displayPath(string $path_): string
+    public function Display_Path(string $path): string
     {
         $base_ = str_replace('\\', '/', base_path());
-        $normalized_ = str_replace('\\', '/', $path_);
+        $normalized_ = str_replace('\\', '/', $path);
 
         return str_starts_with($normalized_, $base_.'/') ? substr($normalized_, strlen($base_) + 1) : $normalized_;
     }
 
-    private function isAbsolutePath(string $path_): bool
+    public function Is_Absolute_Path(string $path): bool
     {
-        return preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/]{2}|\/)/', $path_) === 1;
+        return preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/]{2}|\/)/', $path) === 1;
     }
 }

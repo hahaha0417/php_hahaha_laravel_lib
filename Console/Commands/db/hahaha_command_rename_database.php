@@ -11,15 +11,15 @@ use Throwable;
 
 class hahaha_command_rename_database extends Command
 {
-    private const TEMP_CONNECTION_NAME = 'hahaha_install_database_rename_';
+    public const TEMP_CONNECTION_NAME = 'hahaha_install_database_rename_';
 
-    protected $signature = 'l_lib:db:rename_database
+    public $signature = 'l_lib:db:rename_database
         {--from_database= : The source database name}
         {--to_database= : The target database name}
         {--connection= : The database connection name to use}
         {--force=2 : 1 forces rename, 2 requires confirmation before renaming}';
 
-    protected $description = 'Rename the configured database for the selected Laravel database connection';
+    public $description = 'Rename the configured database for the selected Laravel database connection';
 
     public function handle(): int
     {
@@ -64,20 +64,20 @@ class hahaha_command_rename_database extends Command
 
         try {
             return match ($database_connection_) {
-                'sqlite' => $this->sqlite_database_rename_($source_database_name_, $target_database_name_),
-                'mysql', 'mariadb' => $this->mysql_database_rename_(
+                'sqlite' => $this->Sqlite_Database_Rename($source_database_name_, $target_database_name_),
+                'mysql', 'mariadb' => $this->Mysql_Database_Rename(
                     $database_connection_,
                     $source_database_name_,
                     $target_database_name_,
                     $connection_config_
                 ),
-                'pgsql', 'sqlsrv' => $this->server_database_rename_(
+                'pgsql', 'sqlsrv' => $this->Server_Database_Rename(
                     $database_connection_,
                     $source_database_name_,
                     $target_database_name_,
                     $connection_config_
                 ),
-                default => $this->database_connection_unsupported_($database_connection_),
+                default => $this->Database_Connection_Unsupported($database_connection_),
             };
         } catch (Throwable $throwable_) {
             $this->components->error($throwable_->getMessage());
@@ -86,25 +86,25 @@ class hahaha_command_rename_database extends Command
         }
     }
 
-    private function database_connection_unsupported_(string $database_connection_): int
+    public function Database_Connection_Unsupported(string $database_connection): int
     {
-        $this->components->error('Unsupported DB_CONNECTION value: '.$database_connection_);
+        $this->components->error('Unsupported DB_CONNECTION value: '.$database_connection);
 
         return self::FAILURE;
     }
 
-    private function sqlite_database_rename_(
-        string $source_database_name_,
-        string $target_database_name_
+    public function Sqlite_Database_Rename(
+        string $source_database_name,
+        string $target_database_name
     ): int {
-        if ($source_database_name_ === ':memory:' || $target_database_name_ === ':memory:') {
+        if ($source_database_name === ':memory:' || $target_database_name === ':memory:') {
             $this->components->error('SQLite in-memory databases cannot be renamed.');
 
             return self::FAILURE;
         }
 
-        $source_database_path_ = $this->sqlite_database_path_resolve_($source_database_name_);
-        $target_database_path_ = $this->sqlite_database_path_resolve_($target_database_name_);
+        $source_database_path_ = $this->Sqlite_Database_Path_Resolve($source_database_name);
+        $target_database_path_ = $this->Sqlite_Database_Path_Resolve($target_database_name);
 
         if (! File::exists($source_database_path_)) {
             $this->components->warn('Source database does not exist: '.$source_database_path_);
@@ -118,7 +118,7 @@ class hahaha_command_rename_database extends Command
             return self::FAILURE;
         }
 
-        if (! $this->database_rename_should_continue_($source_database_name_, $target_database_name_)) {
+        if (! $this->Database_Rename_Should_Continue($source_database_name, $target_database_name)) {
             return self::FAILURE;
         }
 
@@ -130,7 +130,7 @@ class hahaha_command_rename_database extends Command
 
         File::move($source_database_path_, $target_database_path_);
 
-        $this->components->info('Database renamed: '.$source_database_name_.' -> '.$target_database_name_);
+        $this->components->info('Database renamed: '.$source_database_name.' -> '.$target_database_name);
 
         return self::SUCCESS;
     }
@@ -138,27 +138,27 @@ class hahaha_command_rename_database extends Command
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function mysql_database_rename_(
-        string $database_connection_,
-        string $source_database_name_,
-        string $target_database_name_,
-        array $connection_config_
+    public function Mysql_Database_Rename(
+        string $database_connection,
+        string $source_database_name,
+        string $target_database_name,
+        array $connection_config
     ): int {
-        $admin_connection_config_ = $this->database_connection_config_build_($database_connection_, $connection_config_);
+        $admin_connection_config_ = $this->Database_Connection_Config_Build($database_connection, $connection_config);
 
-        if (! $this->server_database_exists_($admin_connection_config_, $source_database_name_)) {
-            $this->components->warn('Source database does not exist: '.$source_database_name_);
-
-            return self::FAILURE;
-        }
-
-        if ($this->server_database_exists_($admin_connection_config_, $target_database_name_)) {
-            $this->components->warn('Target database already exists: '.$target_database_name_);
+        if (! $this->Server_Database_Exists($admin_connection_config_, $source_database_name)) {
+            $this->components->warn('Source database does not exist: '.$source_database_name);
 
             return self::FAILURE;
         }
 
-        if (! $this->database_rename_should_continue_($source_database_name_, $target_database_name_)) {
+        if ($this->Server_Database_Exists($admin_connection_config_, $target_database_name)) {
+            $this->components->warn('Target database already exists: '.$target_database_name);
+
+            return self::FAILURE;
+        }
+
+        if (! $this->Database_Rename_Should_Continue($source_database_name, $target_database_name)) {
             return self::FAILURE;
         }
 
@@ -173,26 +173,26 @@ class hahaha_command_rename_database extends Command
             $database_connection_instance_ = DB::connection(self::TEMP_CONNECTION_NAME);
             $schema_builder_ = $database_connection_instance_->getSchemaBuilder();
 
-            $schema_builder_->createDatabase($target_database_name_);
+            $schema_builder_->createDatabase($target_database_name);
 
-            $table_names_ = $schema_builder_->getTableListing($source_database_name_, false);
+            $table_names_ = $schema_builder_->getTableListing($source_database_name, false);
 
             foreach ($table_names_ as $table_name_) {
                 $database_connection_instance_->unprepared(
-                    $this->mysql_table_rename_statement_build_(
-                        $source_database_name_,
-                        $target_database_name_,
+                    $this->Mysql_Table_Rename_Statement_Build(
+                        $source_database_name,
+                        $target_database_name,
                         (string) $table_name_
                     )
                 );
             }
 
-            $schema_builder_->dropDatabaseIfExists($source_database_name_);
+            $schema_builder_->dropDatabaseIfExists($source_database_name);
         } finally {
             DB::purge(self::TEMP_CONNECTION_NAME);
         }
 
-        $this->components->info('Database renamed: '.$source_database_name_.' -> '.$target_database_name_);
+        $this->components->info('Database renamed: '.$source_database_name.' -> '.$target_database_name);
 
         return self::SUCCESS;
     }
@@ -200,32 +200,32 @@ class hahaha_command_rename_database extends Command
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function server_database_rename_(
-        string $database_connection_,
-        string $source_database_name_,
-        string $target_database_name_,
-        array $connection_config_
+    public function Server_Database_Rename(
+        string $database_connection,
+        string $source_database_name,
+        string $target_database_name,
+        array $connection_config
     ): int {
-        $admin_connection_config_ = $this->database_connection_config_build_($database_connection_, $connection_config_);
-        $database_rename_statement_ = $this->database_rename_statement_build_(
-            $database_connection_,
-            $source_database_name_,
-            $target_database_name_
+        $admin_connection_config_ = $this->Database_Connection_Config_Build($database_connection, $connection_config);
+        $database_rename_statement_ = $this->Database_Rename_Statement_Build(
+            $database_connection,
+            $source_database_name,
+            $target_database_name
         );
 
-        if (! $this->server_database_exists_($admin_connection_config_, $source_database_name_)) {
-            $this->components->warn('Source database does not exist: '.$source_database_name_);
+        if (! $this->Server_Database_Exists($admin_connection_config_, $source_database_name)) {
+            $this->components->warn('Source database does not exist: '.$source_database_name);
 
             return self::FAILURE;
         }
 
-        if ($this->server_database_exists_($admin_connection_config_, $target_database_name_)) {
-            $this->components->warn('Target database already exists: '.$target_database_name_);
+        if ($this->Server_Database_Exists($admin_connection_config_, $target_database_name)) {
+            $this->components->warn('Target database already exists: '.$target_database_name);
 
             return self::FAILURE;
         }
 
-        if (! $this->database_rename_should_continue_($source_database_name_, $target_database_name_)) {
+        if (! $this->Database_Rename_Should_Continue($source_database_name, $target_database_name)) {
             return self::FAILURE;
         }
 
@@ -239,12 +239,12 @@ class hahaha_command_rename_database extends Command
             /** @var Connection $database_connection_instance_ */
             $database_connection_instance_ = DB::connection(self::TEMP_CONNECTION_NAME);
 
-            if ($this->database_rename_with_schema_builder_if_supported_(
+            if ($this->Database_Rename_With_Schema_Builder_If_Supported(
                 $database_connection_instance_,
-                $source_database_name_,
-                $target_database_name_
+                $source_database_name,
+                $target_database_name
             )) {
-                $this->components->info('Database renamed: '.$source_database_name_.' -> '.$target_database_name_);
+                $this->components->info('Database renamed: '.$source_database_name.' -> '.$target_database_name);
 
                 return self::SUCCESS;
             }
@@ -254,18 +254,18 @@ class hahaha_command_rename_database extends Command
             DB::purge(self::TEMP_CONNECTION_NAME);
         }
 
-        $this->components->info('Database renamed: '.$source_database_name_.' -> '.$target_database_name_);
+        $this->components->info('Database renamed: '.$source_database_name.' -> '.$target_database_name);
 
         return self::SUCCESS;
     }
 
-    private function database_rename_should_continue_(string $source_database_name_, string $target_database_name_): bool
+    public function Database_Rename_Should_Continue(string $source_database_name, string $target_database_name): bool
     {
         if ((string) $this->option('force') === '1') {
             return true;
         }
 
-        if (! $this->confirm('Do you want to rename database ['.$source_database_name_.'] to ['.$target_database_name_.']?', false)) {
+        if (! $this->confirm('Do you want to rename database ['.$source_database_name.'] to ['.$target_database_name.']?', false)) {
             $this->components->info('Database rename cancelled.');
 
             return false;
@@ -274,105 +274,105 @@ class hahaha_command_rename_database extends Command
         return true;
     }
 
-    private function database_rename_with_schema_builder_if_supported_(
-        Connection $database_connection_,
-        string $source_database_name_,
-        string $target_database_name_
+    public function Database_Rename_With_Schema_Builder_If_Supported(
+        Connection $database_connection,
+        string $source_database_name,
+        string $target_database_name
     ): bool {
-        $schema_builder_ = $database_connection_->getSchemaBuilder();
+        $schema_builder_ = $database_connection->getSchemaBuilder();
 
         if (! method_exists($schema_builder_, 'renameDatabase')) {
             return false;
         }
 
-        $schema_builder_->renameDatabase($source_database_name_, $target_database_name_);
+        $schema_builder_->renameDatabase($source_database_name, $target_database_name);
 
         return true;
     }
 
-    private function mysql_table_rename_statement_build_(
-        string $source_database_name_,
-        string $target_database_name_,
-        string $table_name_
+    public function Mysql_Table_Rename_Statement_Build(
+        string $source_database_name,
+        string $target_database_name,
+        string $table_name
     ): string {
         return 'RENAME TABLE '
-            .$this->mysql_database_table_identifier_escape_($source_database_name_, $table_name_)
+            .$this->Mysql_Database_Table_Identifier_Escape($source_database_name, $table_name)
             .' TO '
-            .$this->mysql_database_table_identifier_escape_($target_database_name_, $table_name_);
+            .$this->Mysql_Database_Table_Identifier_Escape($target_database_name, $table_name);
     }
 
-    private function mysql_database_table_identifier_escape_(string $database_name_, string $table_name_): string
+    public function Mysql_Database_Table_Identifier_Escape(string $database_name, string $table_name): string
     {
-        return '`'.str_replace('`', '``', $database_name_).'`.'
-            .'`'.str_replace('`', '``', $table_name_).'`';
+        return '`'.str_replace('`', '``', $database_name).'`.'
+            .'`'.str_replace('`', '``', $table_name).'`';
     }
 
     /**
      * @param  array<string, mixed>  $connection_config_
      * @return array<string, mixed>
      */
-    private function database_connection_config_build_(string $database_connection_, array $connection_config_): array
+    public function Database_Connection_Config_Build(string $database_connection, array $connection_config): array
     {
-        return match ($database_connection_) {
+        return match ($database_connection) {
             'mysql', 'mariadb' => [
-                ...Arr::except($connection_config_, ['database']),
-                'driver' => $database_connection_,
+                ...Arr::except($connection_config, ['database']),
+                'driver' => $database_connection,
                 'database' => null,
             ],
             'pgsql' => [
-                ...$connection_config_,
+                ...$connection_config,
                 'driver' => 'pgsql',
-                'database' => $connection_config_['admin_database'] ?? 'postgres',
+                'database' => $connection_config['admin_database'] ?? 'postgres',
             ],
             'sqlsrv' => [
-                ...$connection_config_,
+                ...$connection_config,
                 'driver' => 'sqlsrv',
-                'database' => $connection_config_['admin_database'] ?? 'master',
+                'database' => $connection_config['admin_database'] ?? 'master',
             ],
-            default => $connection_config_,
+            default => $connection_config,
         };
     }
 
-    private function database_rename_statement_build_(
-        string $database_connection_,
-        string $source_database_name_,
-        string $target_database_name_
+    public function Database_Rename_Statement_Build(
+        string $database_connection,
+        string $source_database_name,
+        string $target_database_name
     ): string {
-        $escaped_source_database_name_ = $this->database_identifier_escape_($database_connection_, $source_database_name_);
-        $escaped_target_database_name_ = $this->database_identifier_escape_($database_connection_, $target_database_name_);
+        $escaped_source_database_name_ = $this->Database_Identifier_Escape($database_connection, $source_database_name);
+        $escaped_target_database_name_ = $this->Database_Identifier_Escape($database_connection, $target_database_name);
 
-        return match ($database_connection_) {
+        return match ($database_connection) {
             'pgsql' => 'ALTER DATABASE '.$escaped_source_database_name_.' RENAME TO '.$escaped_target_database_name_,
             'sqlsrv' => 'ALTER DATABASE '.$escaped_source_database_name_.' MODIFY NAME = '.$escaped_target_database_name_,
             default => '',
         };
     }
 
-    private function database_identifier_escape_(string $database_connection_, string $database_name_): string
+    public function Database_Identifier_Escape(string $database_connection, string $database_name): string
     {
-        return match ($database_connection_) {
-            'pgsql' => '"'.str_replace('"', '""', $database_name_).'"',
-            'sqlsrv' => '['.str_replace(']', ']]', $database_name_).']',
-            default => $database_name_,
+        return match ($database_connection) {
+            'pgsql' => '"'.str_replace('"', '""', $database_name).'"',
+            'sqlsrv' => '['.str_replace(']', ']]', $database_name).']',
+            default => $database_name,
         };
     }
 
-    private function sqlite_database_path_resolve_(string $database_path_input_): string
+    public function Sqlite_Database_Path_Resolve(string $database_path_input): string
     {
-        if ($this->path_is_absolute_($database_path_input_)) {
-            return $database_path_input_;
+        if ($this->Path_Is_Absolute($database_path_input)) {
+            return $database_path_input;
         }
 
-        return base_path($database_path_input_);
+        return base_path($database_path_input);
     }
 
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function server_database_exists_(array $connection_config_, string $database_name_): bool
+    public function Server_Database_Exists(array $connection_config, string $database_name): bool
     {
         config([
-            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config_,
+            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config,
         ]);
 
         DB::purge(self::TEMP_CONNECTION_NAME);
@@ -387,7 +387,7 @@ class hahaha_command_rename_database extends Command
                     continue;
                 }
 
-                if (strtolower((string) ($schema_['name'] ?? '')) === strtolower($database_name_)) {
+                if (strtolower((string) ($schema_['name'] ?? '')) === strtolower($database_name)) {
                     return true;
                 }
             }
@@ -398,17 +398,17 @@ class hahaha_command_rename_database extends Command
         }
     }
 
-    private function path_is_absolute_(string $path_input_): bool
+    public function Path_Is_Absolute(string $path_input): bool
     {
-        if ($path_input_ === '') {
+        if ($path_input === '') {
             return false;
         }
 
-        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path_input_) === 1) {
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path_input) === 1) {
             return true;
         }
 
-        return str_starts_with($path_input_, '/')
-            || str_starts_with($path_input_, '\\');
+        return str_starts_with($path_input, '/')
+            || str_starts_with($path_input, '\\');
     }
 }

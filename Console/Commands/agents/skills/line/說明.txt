@@ -1,0 +1,4 @@
+line command 說明
+
+- `hahaha_command_agents_skills_line`
+  - 提供 bot、group、rich menu、dashboard、text、image、flex card 等常用 CLI 操作

@@ -1,0 +1,9 @@
+agents skills provider 說明
+
+- `hahaha_provider_agents_skills`
+  - 統一整理 Trello、Jira、GitHub、Outlook、Gmail、LINE 的 artisan command 註冊清單
+
+用途
+
+- 避免主 provider 直接塞入過多 command 類別
+- 讓 skills 相關 command 能獨立維護

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\File;
 
 class hahaha_command_create_proxy_vhost extends Command
 {
-    protected $signature = 'l_lib:apache:create_proxy_vhost
+    public $signature = 'l_lib:apache:create_proxy_vhost
         {--port= : 指定 Listen 與 VirtualHost port}
         {--error_log= : 指定 ErrorLog}
         {--custom_log= : 指定 CustomLog}
@@ -17,7 +17,7 @@ class hahaha_command_create_proxy_vhost extends Command
         {--vhosts_path=C:/web/xampp/apache/conf/extra/httpd-vhosts.conf : 指定 Apache vhosts 設定檔}
         {--server_name=localhost : 指定 ServerName}';
 
-    protected $description = 'Append an Apache proxy VirtualHost block into the configured httpd-vhosts.conf file';
+    public $description = 'Append an Apache proxy VirtualHost block into the configured httpd-vhosts.conf file';
 
     public function handle(): int
     {
@@ -30,7 +30,7 @@ class hahaha_command_create_proxy_vhost extends Command
         $vhosts_path_ = trim((string) $this->option('vhosts_path'));
         $server_name_ = trim((string) $this->option('server_name'));
 
-        if (! $this->port_is_valid_($port_)) {
+        if (! $this->Port_Is_Valid($port_)) {
             $this->components->error('The --port option must be an integer between 1 and 65535.');
 
             return self::FAILURE;
@@ -64,23 +64,23 @@ class hahaha_command_create_proxy_vhost extends Command
         }
 
         $vhosts_content_ = File::get($vhosts_path_);
-        $has_existing_vhost_ = $this->port_exists_in_vhosts_content_(
+        $has_existing_vhost_ = $this->Port_Exists_In_Vhosts_Content(
             vhosts_content_: $vhosts_content_,
             port_: $port_,
         );
 
-        if ($has_existing_vhost_ && ! $this->overwrite_should_continue_($port_, $force_option_)) {
+        if ($has_existing_vhost_ && ! $this->Overwrite_Should_Continue($port_, $force_option_)) {
             return self::FAILURE;
         }
 
         if ($has_existing_vhost_) {
-            $vhosts_content_ = $this->existing_vhost_remove_(
+            $vhosts_content_ = $this->Existing_Vhost_Remove(
                 vhosts_content_: $vhosts_content_,
                 port_: $port_,
             );
         }
 
-        $vhost_block_ = $this->vhost_block_build_(
+        $vhost_block_ = $this->Vhost_Block_Build(
             port_: $port_,
             error_log_: $error_log_,
             custom_log_: $custom_log_,
@@ -89,7 +89,7 @@ class hahaha_command_create_proxy_vhost extends Command
             server_name_: $server_name_,
         );
 
-        $content_to_write_ = $this->content_with_vhost_block_build_(
+        $content_to_write_ = $this->Content_With_Vhost_Block_Build(
             vhosts_content_: $vhosts_content_,
             vhost_block_: $vhost_block_,
         );
@@ -103,24 +103,24 @@ class hahaha_command_create_proxy_vhost extends Command
         return self::SUCCESS;
     }
 
-    private function port_is_valid_(string $port_): bool
+    public function Port_Is_Valid(string $port): bool
     {
-        if ($port_ === '' || ! ctype_digit($port_)) {
+        if ($port === '' || ! ctype_digit($port)) {
             return false;
         }
 
-        $port_number_ = (int) $port_;
+        $port_number_ = (int) $port;
 
         return $port_number_ >= 1 && $port_number_ <= 65535;
     }
 
-    private function overwrite_should_continue_(string $port_, string $force_option_): bool
+    public function Overwrite_Should_Continue(string $port, string $force_option): bool
     {
-        if ($force_option_ === '1') {
+        if ($force_option === '1') {
             return true;
         }
 
-        if (! $this->confirm('VirtualHost already exists for port ['.$port_.']. Do you want to overwrite it?', false)) {
+        if (! $this->confirm('VirtualHost already exists for port ['.$port.']. Do you want to overwrite it?', false)) {
             $this->components->info('VirtualHost overwrite cancelled.');
 
             return false;
@@ -129,75 +129,75 @@ class hahaha_command_create_proxy_vhost extends Command
         return true;
     }
 
-    private function port_exists_in_vhosts_content_(string $vhosts_content_, string $port_): bool
+    public function Port_Exists_In_Vhosts_Content(string $vhosts_content, string $port): bool
     {
-        return preg_match($this->listen_pattern_build_($port_), $vhosts_content_) === 1
-            || preg_match($this->virtual_host_pattern_build_($port_), $vhosts_content_) === 1;
+        return preg_match($this->Listen_Pattern_Build($port), $vhosts_content) === 1
+            || preg_match($this->Virtual_Host_Pattern_Build($port), $vhosts_content) === 1;
     }
 
-    private function existing_vhost_remove_(string $vhosts_content_, string $port_): string
+    public function Existing_Vhost_Remove(string $vhosts_content, string $port): string
     {
         $content_without_listen_ = preg_replace(
-            $this->listen_pattern_build_($port_),
+            $this->Listen_Pattern_Build($port),
             '',
-            $vhosts_content_,
+            $vhosts_content,
         );
 
         $content_without_vhost_ = preg_replace(
-            $this->virtual_host_pattern_build_($port_),
+            $this->Virtual_Host_Pattern_Build($port),
             '',
-            $content_without_listen_ ?? $vhosts_content_,
+            $content_without_listen_ ?? $vhosts_content,
         );
 
         if (! is_string($content_without_vhost_)) {
-            return $vhosts_content_;
+            return $vhosts_content;
         }
 
         return trim($content_without_vhost_);
     }
 
-    private function content_with_vhost_block_build_(string $vhosts_content_, string $vhost_block_): string
+    public function Content_With_Vhost_Block_Build(string $vhosts_content, string $vhost_block): string
     {
-        if ($vhosts_content_ === '') {
-            return $vhost_block_;
+        if ($vhosts_content === '') {
+            return $vhost_block;
         }
 
-        return rtrim($vhosts_content_).PHP_EOL.PHP_EOL.$vhost_block_;
+        return rtrim($vhosts_content).PHP_EOL.PHP_EOL.$vhost_block;
     }
 
-    private function listen_pattern_build_(string $port_): string
+    public function Listen_Pattern_Build(string $port): string
     {
-        return '/^[ \t]*Listen[ \t]+'.preg_quote($port_, '/').'[ \t]*\R?/mi';
+        return '/^[ \t]*Listen[ \t]+'.preg_quote($port, '/').'[ \t]*\R?/mi';
     }
 
-    private function virtual_host_pattern_build_(string $port_): string
+    public function Virtual_Host_Pattern_Build(string $port): string
     {
-        return '/^[ \t]*<VirtualHost \*:'.preg_quote($port_, '/').'>\R.*?^[ \t]*<\/VirtualHost>[ \t]*\R?/mis';
+        return '/^[ \t]*<VirtualHost \*:'.preg_quote($port, '/').'>\R.*?^[ \t]*<\/VirtualHost>[ \t]*\R?/mis';
     }
 
-    private function vhost_block_build_(
-        string $port_,
-        string $error_log_,
-        string $custom_log_,
-        string $proxy_pass_,
-        string $proxy_pass_reverse_,
-        string $server_name_,
+    public function Vhost_Block_Build(
+        string $port,
+        string $error_log,
+        string $custom_log,
+        string $proxy_pass,
+        string $proxy_pass_reverse,
+        string $server_name,
     ): string {
         return <<<VHOST
-Listen {$port_}
-<VirtualHost *:{$port_}>
-    ServerName {$server_name_} 
+Listen {$port}
+<VirtualHost *:{$port}>
+    ServerName {$server_name} 
 
 
     # 轉發 Header 給後端 Kestrel
     RequestHeader set X-Forwarded-For "%{REMOTE_ADDR}s"
     RequestHeader set X-Forwarded-Proto expr=%{REQUEST_SCHEME}
 
-    ProxyPass / {$proxy_pass_}
-    ProxyPassReverse / {$proxy_pass_reverse_}
+    ProxyPass / {$proxy_pass}
+    ProxyPassReverse / {$proxy_pass_reverse}
 
-    ErrorLog "{$error_log_}"
-    CustomLog "{$custom_log_}" common
+    ErrorLog "{$error_log}"
+    CustomLog "{$custom_log}" common
 \t
 
 </VirtualHost>

@@ -1,0 +1,23 @@
+skills service 目錄說明
+
+- common
+  - 放 provider 共用 HTTP client 建立流程與設定解析
+- trello
+  - 放 Trello board、list、card、dashboard、image attachment 相關 service
+- jira
+  - 放 Jira project、issue、transition、board、dashboard、image attachment 相關 service
+- github
+  - 放 GitHub repo、issue、pull、dashboard、contents、image commit 相關 service
+- outlook
+  - 放 Outlook folders、messages、draft、send、dashboard、calendar、image attachment 相關 service
+- gmail
+  - 放 Gmail labels、messages、thread、draft、send、dashboard、image mail 相關 service
+- line
+  - 放 LINE bot、group、rich menu、dashboard、text、image、flex card 相關 service
+
+整理原則
+
+- 每個 provider 一個主 service class
+- public function 對應常用外部能力
+- public function 統一處理 request、config、payload 細節
+- 所有 request 一律走 Laravel Http client，不直接用 curl

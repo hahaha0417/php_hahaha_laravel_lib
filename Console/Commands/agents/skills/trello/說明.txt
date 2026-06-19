@@ -1,0 +1,4 @@
+trello command 說明
+
+- `hahaha_command_agents_skills_trello`
+  - 提供 board、card、dashboard、image attachment 等常用 CLI 操作

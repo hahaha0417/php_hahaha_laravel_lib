@@ -19,50 +19,50 @@ use Throwable;
 #[Description('為 AI 助手快取多份專案上下文檔案')]
 class hahaha_cache_ai_context extends Command
 {
-    private const DEFAULT_OUTPUT_DIR = 'storage/app/ai-context';
-    private const META_FILE = '.hahaha_cache_meta.json';
+    public const DEFAULT_OUTPUT_DIR = 'storage/app/ai-context';
+    public const META_FILE = '.hahaha_cache_meta.json';
 
     /** @var array<int, SplFileInfo>|null */
-    private ?array $all_files_cache_ = null;
+    public ?array $all_files_cache_ = null;
 
     /** @var array<int, SplFileInfo>|null */
-    private ?array $relevant_context_files_cache_ = null;
+    public ?array $relevant_context_files_cache_ = null;
 
     public function __construct(
-        private readonly Filesystem $files,
+        public readonly Filesystem $files_,
     ) {
         parent::__construct();
     }
 
     public function handle(): int
     {
-        $output_dir_ = $this->resolveOutputDir((string) $this->option('output-dir'));
-        $this->files->ensureDirectoryExists($output_dir_);
+        $output_dir_ = $this->Resolve_Output_Dir((string) $this->option('output-dir'));
+        $this->files_->ensureDirectoryExists($output_dir_);
 
-        $fingerprint_ = $this->buildFingerprint($output_dir_);
+        $fingerprint_ = $this->Build_Fingerprint($output_dir_);
 
-        if ($this->isFingerprintUnchanged($output_dir_, $fingerprint_)) {
-            $this->components->info(sprintf('程式碼未變更，略過重建：%s', $this->displayPath($output_dir_)));
+        if ($this->Is_Fingerprint_Unchanged($output_dir_, $fingerprint_)) {
+            $this->components->info(sprintf('程式碼未變更，略過重建：%s', $this->Display_Path($output_dir_)));
 
             return self::SUCCESS;
         }
 
-        $this->writeFile($output_dir_, 'routes.md', $this->renderRoutesSummary());
-        $this->writeFile($output_dir_, 'database-schema.md', $this->renderDatabaseSchemaSummary());
-        $this->writeFile($output_dir_, 'config.md', $this->renderConfigSummary());
-        $this->writeFile($output_dir_, 'packages.md', $this->renderPackageSummary());
-        $this->testsSummaryWrite_($output_dir_);
-        $this->writeFile($output_dir_, 'recent-changes.md', $this->renderRecentChangesSummary());
-        $this->writeFile($output_dir_, 'ownership-map.md', $this->renderOwnershipMap());
-        $this->writeFile($output_dir_, 'php-symbols.md', $this->renderPhpSymbolsSummary());
-        $this->writeFingerprint($output_dir_, $fingerprint_);
+        $this->Write_File($output_dir_, 'routes.md', $this->Render_Routes_Summary());
+        $this->Write_File($output_dir_, 'database-schema.md', $this->Render_Database_Schema_Summary());
+        $this->Write_File($output_dir_, 'config.md', $this->Render_Config_Summary());
+        $this->Write_File($output_dir_, 'packages.md', $this->Render_Package_Summary());
+        $this->Tests_Summary_Write($output_dir_);
+        $this->Write_File($output_dir_, 'recent-changes.md', $this->Render_Recent_Changes_Summary());
+        $this->Write_File($output_dir_, 'ownership-map.md', $this->Render_Ownership_Map());
+        $this->Write_File($output_dir_, 'php-symbols.md', $this->Render_Php_Symbols_Summary());
+        $this->Write_Fingerprint($output_dir_, $fingerprint_);
 
-        $this->components->info(sprintf('AI 上下文快取已輸出：%s', $this->displayPath($output_dir_)));
+        $this->components->info(sprintf('AI 上下文快取已輸出：%s', $this->Display_Path($output_dir_)));
 
         return self::SUCCESS;
     }
 
-    private function renderRoutesSummary(): string
+    public function Render_Routes_Summary(): string
     {
         $routes_ = collect(Route::getRoutes()->getRoutes())
             ->map(fn ($route_) => [
@@ -89,7 +89,7 @@ class hahaha_cache_ai_context extends Command
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function renderDatabaseSchemaSummary(): string
+    public function Render_Database_Schema_Summary(): string
     {
         try {
             $tables_ = Schema::getTables();
@@ -128,7 +128,7 @@ class hahaha_cache_ai_context extends Command
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function renderConfigSummary(): string
+    public function Render_Config_Summary(): string
     {
         $lines_ = [
             '# Config',
@@ -146,7 +146,7 @@ class hahaha_cache_ai_context extends Command
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function renderPackageSummary(): string
+    public function Render_Package_Summary(): string
     {
         $composer_ = json_decode((string) file_get_contents(base_path('composer.json')), true);
         $package_json_ = json_decode((string) file_get_contents(base_path('package.json')), true);
@@ -164,12 +164,12 @@ class hahaha_cache_ai_context extends Command
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function renderTestSummary(): string
+    public function Render_Test_Summary(): string
     {
-        $test_files_ = collect($this->allFilesCached())
+        $test_files_ = collect($this->All_Files_Cached())
             ->filter(static fn (SplFileInfo $file_): bool => $file_->getExtension() === 'php')
-            ->filter(fn (SplFileInfo $file_): bool => str_starts_with($this->relativePath($file_), 'tests/'))
-            ->map(fn (SplFileInfo $file_): string => $this->relativePath($file_))
+            ->filter(fn (SplFileInfo $file_): bool => str_starts_with($this->Relative_Path($file_), 'tests/'))
+            ->map(fn (SplFileInfo $file_): string => $this->Relative_Path($file_))
             ->sort()
             ->values();
 
@@ -188,24 +188,24 @@ class hahaha_cache_ai_context extends Command
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function testsSummaryWrite_(string $output_dir_): void
+    public function Tests_Summary_Write(string $output_dir): void
     {
-        $tests_summary_path_ = $output_dir_.DIRECTORY_SEPARATOR.'tests.md';
+        $tests_summary_path_ = $output_dir.DIRECTORY_SEPARATOR.'tests.md';
 
         if (! (bool) $this->option('with-tests')) {
-            if ($this->files->exists($tests_summary_path_)) {
-                $this->files->delete($tests_summary_path_);
+            if ($this->files_->exists($tests_summary_path_)) {
+                $this->files_->delete($tests_summary_path_);
             }
 
             return;
         }
 
-        $this->writeFile($output_dir_, 'tests.md', $this->renderTestSummary());
+        $this->Write_File($output_dir, 'tests.md', $this->Render_Test_Summary());
     }
 
-    private function renderRecentChangesSummary(): string
+    public function Render_Recent_Changes_Summary(): string
     {
-        $files_ = collect($this->relevantContextFilesCached())
+        $files_ = collect($this->Relevant_Context_Files_Cached())
             ->sortByDesc(fn (SplFileInfo $file_): int => $file_->getMTime())
             ->take(20)
             ->values();
@@ -218,16 +218,16 @@ class hahaha_cache_ai_context extends Command
         ];
 
         foreach ($files_ as $file_) {
-            $lines_[] = sprintf('- %s (%s)', $this->relativePath($file_), Carbon::createFromTimestamp($file_->getMTime())->toDateTimeString());
+            $lines_[] = sprintf('- %s (%s)', $this->Relative_Path($file_), Carbon::createFromTimestamp($file_->getMTime())->toDateTimeString());
         }
 
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function renderOwnershipMap(): string
+    public function Render_Ownership_Map(): string
     {
-        $files_ = collect($this->relevantContextFilesCached())
-            ->map(fn (SplFileInfo $file_): string => $this->relativePath($file_))
+        $files_ = collect($this->Relevant_Context_Files_Cached())
+            ->map(fn (SplFileInfo $file_): string => $this->Relative_Path($file_))
             ->values();
 
         $bucket_counts_ = [
@@ -270,11 +270,11 @@ class hahaha_cache_ai_context extends Command
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function renderPhpSymbolsSummary(): string
+    public function Render_Php_Symbols_Summary(): string
     {
-        $php_files_ = collect($this->relevantContextFilesCached())
-            ->filter(fn (SplFileInfo $file_): bool => str_ends_with($this->relativePath($file_), '.php'))
-            ->sortBy(fn (SplFileInfo $file_): string => $this->relativePath($file_))
+        $php_files_ = collect($this->Relevant_Context_Files_Cached())
+            ->filter(fn (SplFileInfo $file_): bool => str_ends_with($this->Relative_Path($file_), '.php'))
+            ->sortBy(fn (SplFileInfo $file_): string => $this->Relative_Path($file_))
             ->values();
 
         $lines_ = [
@@ -285,36 +285,36 @@ class hahaha_cache_ai_context extends Command
         ];
 
         foreach ($php_files_ as $file_) {
-            $contents_ = $this->files->get($file_->getPathname());
+            $contents_ = $this->files_->get($file_->getPathname());
 
             if (preg_match('/\b(class|interface|trait|enum)\s+([A-Za-z_][A-Za-z0-9_]*)/m', $contents_, $match_) !== 1) {
                 continue;
             }
 
-            $lines_[] = sprintf('- %s => %s %s', $this->relativePath($file_), $match_[1], $match_[2]);
+            $lines_[] = sprintf('- %s => %s %s', $this->Relative_Path($file_), $match_[1], $match_[2]);
         }
 
         return implode(PHP_EOL, $lines_).PHP_EOL;
     }
 
-    private function writeFile(string $output_dir_, string $filename_, string $contents_): void
+    public function Write_File(string $output_dir, string $filename, string $contents): void
     {
-        $path_ = $output_dir_.DIRECTORY_SEPARATOR.$filename_;
+        $path_ = $output_dir.DIRECTORY_SEPARATOR.$filename;
 
-        if ($this->files->exists($path_) && $this->files->get($path_) === $contents_) {
+        if ($this->files_->exists($path_) && $this->files_->get($path_) === $contents) {
             return;
         }
 
-        $this->files->put($path_, $contents_);
+        $this->files_->put($path_, $contents);
     }
 
-    private function buildFingerprint(string $output_dir_): string
+    public function Build_Fingerprint(string $output_dir): string
     {
         $parts_ = [];
-        $output_dir_normalized_ = str_replace('\\', '/', rtrim($output_dir_, '\\/'));
+        $output_dir_normalized_ = str_replace('\\', '/', rtrim($output_dir, '\\/'));
 
-        foreach ($this->relevantContextFilesCached() as $file_) {
-            $relative_path_ = $this->relativePath($file_);
+        foreach ($this->Relevant_Context_Files_Cached() as $file_) {
+            $relative_path_ = $this->Relative_Path($file_);
 
             $full_path_normalized_ = str_replace('\\', '/', $file_->getPathname());
             if (str_starts_with($full_path_normalized_, $output_dir_normalized_.'/')) {
@@ -329,31 +329,31 @@ class hahaha_cache_ai_context extends Command
         return hash('sha256', implode("\n", $parts_));
     }
 
-    private function isFingerprintUnchanged(string $output_dir_, string $fingerprint_): bool
+    public function Is_Fingerprint_Unchanged(string $output_dir, string $fingerprint): bool
     {
-        $meta_path_ = rtrim($output_dir_, '\\/').DIRECTORY_SEPARATOR.self::META_FILE;
+        $meta_path_ = rtrim($output_dir, '\\/').DIRECTORY_SEPARATOR.self::META_FILE;
 
-        if (! $this->files->exists($meta_path_)) {
+        if (! $this->files_->exists($meta_path_)) {
             return false;
         }
 
-        $meta_ = json_decode($this->files->get($meta_path_), true);
+        $meta_ = json_decode($this->files_->get($meta_path_), true);
 
-        return is_array($meta_) && ($meta_['fingerprint'] ?? null) === $fingerprint_;
+        return is_array($meta_) && ($meta_['fingerprint'] ?? null) === $fingerprint;
     }
 
-    private function writeFingerprint(string $output_dir_, string $fingerprint_): void
+    public function Write_Fingerprint(string $output_dir, string $fingerprint): void
     {
-        $meta_path_ = rtrim($output_dir_, '\\/').DIRECTORY_SEPARATOR.self::META_FILE;
+        $meta_path_ = rtrim($output_dir, '\\/').DIRECTORY_SEPARATOR.self::META_FILE;
         $payload_ = [
-            'fingerprint' => $fingerprint_,
+            'fingerprint' => $fingerprint,
             'updated_at' => Carbon::now()->toDateTimeString(),
         ];
 
-        $this->files->put($meta_path_, json_encode($payload_, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT).PHP_EOL);
+        $this->files_->put($meta_path_, json_encode($payload_, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT).PHP_EOL);
     }
 
-    private function isRelevantForContext(string $relative_path_): bool
+    public function Is_Relevant_For_Context(string $relative_path): bool
     {
         $excluded_prefixes_ = [
             '.codex/',
@@ -367,7 +367,7 @@ class hahaha_cache_ai_context extends Command
             'vendor/',
         ];
 
-        $normalized_ = str_replace('\\', '/', $relative_path_);
+        $normalized_ = str_replace('\\', '/', $relative_path);
 
         foreach ($excluded_prefixes_ as $excluded_) {
             if (str_starts_with($normalized_, $excluded_)) {
@@ -378,33 +378,33 @@ class hahaha_cache_ai_context extends Command
         return ! str_starts_with($normalized_, 'storage/app/ai-context/');
     }
 
-    private function resolveOutputDir(string $output_dir_): string
+    public function Resolve_Output_Dir(string $output_dir): string
     {
-        $normalized_ = trim($output_dir_);
+        $normalized_ = trim($output_dir);
 
         if ($normalized_ === '') {
             $normalized_ = self::DEFAULT_OUTPUT_DIR;
         }
 
-        if ($this->isAbsolutePath($normalized_)) {
+        if ($this->Is_Absolute_Path($normalized_)) {
             return $normalized_;
         }
 
         return base_path($normalized_);
     }
 
-    private function relativePath(SplFileInfo $file_): string
+    public function Relative_Path(SplFileInfo $file): string
     {
-        $path_ = str_replace('\\', '/', $file_->getPathname());
+        $path_ = str_replace('\\', '/', $file->getPathname());
         $base_path_ = str_replace('\\', '/', base_path());
 
         return ltrim(str_replace($base_path_, '', $path_), '/');
     }
 
-    private function displayPath(string $path_): string
+    public function Display_Path(string $path): string
     {
         $base_path_ = str_replace('\\', '/', base_path());
-        $normalized_path_ = str_replace('\\', '/', $path_);
+        $normalized_path_ = str_replace('\\', '/', $path);
 
         if (str_starts_with($normalized_path_, $base_path_.'/')) {
             return substr($normalized_path_, strlen($base_path_) + 1);
@@ -413,25 +413,25 @@ class hahaha_cache_ai_context extends Command
         return $normalized_path_;
     }
 
-    private function isAbsolutePath(string $path_): bool
+    public function Is_Absolute_Path(string $path): bool
     {
-        return preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/]{2}|\/)/', $path_) === 1;
+        return preg_match('/^(?:[A-Za-z]:[\\\\\/]|[\\\\\/]{2}|\/)/', $path) === 1;
     }
 
     /** @return array<int, SplFileInfo> */
-    private function allFilesCached(): array
+    public function All_Files_Cached(): array
     {
         if ($this->all_files_cache_ !== null) {
             return $this->all_files_cache_;
         }
 
-        $this->all_files_cache_ = $this->files->allFiles(base_path());
+        $this->all_files_cache_ = $this->files_->allFiles(base_path());
 
         return $this->all_files_cache_;
     }
 
     /** @return array<int, SplFileInfo> */
-    private function relevantContextFilesCached(): array
+    public function Relevant_Context_Files_Cached(): array
     {
         if ($this->relevant_context_files_cache_ !== null) {
             return $this->relevant_context_files_cache_;
@@ -439,8 +439,8 @@ class hahaha_cache_ai_context extends Command
 
         $files_ = [];
 
-        foreach ($this->allFilesCached() as $file_) {
-            if ($this->isRelevantForContext($this->relativePath($file_))) {
+        foreach ($this->All_Files_Cached() as $file_) {
+            if ($this->Is_Relevant_For_Context($this->Relative_Path($file_))) {
                 $files_[] = $file_;
             }
         }

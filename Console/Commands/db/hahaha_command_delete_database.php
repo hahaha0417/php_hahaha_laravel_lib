@@ -11,14 +11,14 @@ use Throwable;
 
 class hahaha_command_delete_database extends Command
 {
-    private const TEMP_CONNECTION_NAME = 'hahaha_install_database_delete_';
+    public const TEMP_CONNECTION_NAME = 'hahaha_install_database_delete_';
 
-    protected $signature = 'l_lib:db:delete_database
+    public $signature = 'l_lib:db:delete_database
         {--database= : The database name to delete}
         {--connection= : The database connection name to use}
         {--force=2 : 1 forces deletion, 2 requires confirmation before deletion}';
 
-    protected $description = 'Delete the configured database using the current Laravel database configuration';
+    public $description = 'Delete the configured database using the current Laravel database configuration';
 
     public function handle(): int
     {
@@ -50,9 +50,9 @@ class hahaha_command_delete_database extends Command
 
         try {
             return match ($database_driver_) {
-                'sqlite' => $this->sqlite_database_delete_($connection_config_),
-                'mysql', 'mariadb', 'pgsql', 'sqlsrv' => $this->server_database_delete_($database_driver_, $connection_config_),
-                default => $this->database_connection_unsupported_($database_driver_),
+                'sqlite' => $this->Sqlite_Database_Delete($connection_config_),
+                'mysql', 'mariadb', 'pgsql', 'sqlsrv' => $this->Server_Database_Delete($database_driver_, $connection_config_),
+                default => $this->Database_Connection_Unsupported($database_driver_),
             };
         } catch (Throwable $throwable_) {
             $this->components->error($throwable_->getMessage());
@@ -61,9 +61,9 @@ class hahaha_command_delete_database extends Command
         }
     }
 
-    private function database_connection_unsupported_(string $database_connection_): int
+    public function Database_Connection_Unsupported(string $database_connection): int
     {
-        $this->components->error('Unsupported DB_CONNECTION value: '.$database_connection_);
+        $this->components->error('Unsupported DB_CONNECTION value: '.$database_connection);
 
         return self::FAILURE;
     }
@@ -71,9 +71,9 @@ class hahaha_command_delete_database extends Command
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function sqlite_database_delete_(array $connection_config_): int
+    public function Sqlite_Database_Delete(array $connection_config): int
     {
-        $database_path_input_ = trim((string) ($connection_config_['database'] ?? ''));
+        $database_path_input_ = trim((string) ($connection_config['database'] ?? ''));
 
         if ($database_path_input_ === '') {
             $this->components->error('DB_DATABASE must be set for sqlite connections.');
@@ -87,7 +87,7 @@ class hahaha_command_delete_database extends Command
             return self::SUCCESS;
         }
 
-        $database_path_ = $this->sqlite_database_path_resolve_($database_path_input_);
+        $database_path_ = $this->Sqlite_Database_Path_Resolve($database_path_input_);
 
         if (! File::exists($database_path_)) {
             $this->components->warn('Database does not exist: '.$database_path_);
@@ -95,7 +95,7 @@ class hahaha_command_delete_database extends Command
             return self::FAILURE;
         }
 
-        if (! $this->database_deletion_should_continue_($database_path_)) {
+        if (! $this->Database_Deletion_Should_Continue($database_path_)) {
             return self::FAILURE;
         }
 
@@ -109,9 +109,9 @@ class hahaha_command_delete_database extends Command
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function server_database_delete_(string $database_connection_, array $connection_config_): int
+    public function Server_Database_Delete(string $database_connection, array $connection_config): int
     {
-        $database_name_ = trim((string) ($connection_config_['database'] ?? ''));
+        $database_name_ = trim((string) ($connection_config['database'] ?? ''));
 
         if ($database_name_ === '') {
             $this->components->error('DB_DATABASE must be set.');
@@ -119,8 +119,8 @@ class hahaha_command_delete_database extends Command
             return self::FAILURE;
         }
 
-        $database_exists_ = $this->server_database_exists_(
-            $this->database_connection_config_build_($database_connection_, $connection_config_),
+        $database_exists_ = $this->Server_Database_Exists(
+            $this->Database_Connection_Config_Build($database_connection, $connection_config),
             $database_name_
         );
 
@@ -130,12 +130,12 @@ class hahaha_command_delete_database extends Command
             return self::FAILURE;
         }
 
-        if (! $this->database_deletion_should_continue_($database_name_)) {
+        if (! $this->Database_Deletion_Should_Continue($database_name_)) {
             return self::FAILURE;
         }
 
-        $this->database_delete_with_schema_builder_(
-            $this->database_connection_config_build_($database_connection_, $connection_config_),
+        $this->Database_Delete_With_Schema_Builder(
+            $this->Database_Connection_Config_Build($database_connection, $connection_config),
             $database_name_
         );
 
@@ -147,10 +147,10 @@ class hahaha_command_delete_database extends Command
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function database_delete_with_schema_builder_(array $connection_config_, string $database_name_): void
+    public function Database_Delete_With_Schema_Builder(array $connection_config, string $database_name): void
     {
         config([
-            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config_,
+            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config,
         ]);
 
         DB::purge(self::TEMP_CONNECTION_NAME);
@@ -159,19 +159,19 @@ class hahaha_command_delete_database extends Command
             /** @var Connection $database_connection_ */
             $database_connection_ = DB::connection(self::TEMP_CONNECTION_NAME);
 
-            $database_connection_->getSchemaBuilder()->dropDatabaseIfExists($database_name_);
+            $database_connection_->getSchemaBuilder()->dropDatabaseIfExists($database_name);
         } finally {
             DB::purge(self::TEMP_CONNECTION_NAME);
         }
     }
 
-    private function database_deletion_should_continue_(string $database_name_): bool
+    public function Database_Deletion_Should_Continue(string $database_name): bool
     {
         if ((string) $this->option('force') === '1') {
             return true;
         }
 
-        if (! $this->confirm('Do you want to delete database ['.$database_name_.']?', false)) {
+        if (! $this->confirm('Do you want to delete database ['.$database_name.']?', false)) {
             $this->components->info('Database deletion cancelled.');
 
             return false;
@@ -184,44 +184,44 @@ class hahaha_command_delete_database extends Command
      * @param  array<string, mixed>  $connection_config_
      * @return array<string, mixed>
      */
-    private function database_connection_config_build_(string $database_connection_, array $connection_config_): array
+    public function Database_Connection_Config_Build(string $database_connection, array $connection_config): array
     {
-        return match ($database_connection_) {
+        return match ($database_connection) {
             'mysql', 'mariadb' => [
-                ...Arr::except($connection_config_, ['database']),
-                'driver' => $database_connection_,
+                ...Arr::except($connection_config, ['database']),
+                'driver' => $database_connection,
                 'database' => null,
             ],
             'pgsql' => [
-                ...$connection_config_,
+                ...$connection_config,
                 'driver' => 'pgsql',
-                'database' => $connection_config_['admin_database'] ?? 'postgres',
+                'database' => $connection_config['admin_database'] ?? 'postgres',
             ],
             'sqlsrv' => [
-                ...$connection_config_,
+                ...$connection_config,
                 'driver' => 'sqlsrv',
-                'database' => $connection_config_['admin_database'] ?? 'master',
+                'database' => $connection_config['admin_database'] ?? 'master',
             ],
             default => [],
         };
     }
 
-    private function sqlite_database_path_resolve_(string $database_path_input_): string
+    public function Sqlite_Database_Path_Resolve(string $database_path_input): string
     {
-        if ($this->path_is_absolute_($database_path_input_)) {
-            return $database_path_input_;
+        if ($this->Path_Is_Absolute($database_path_input)) {
+            return $database_path_input;
         }
 
-        return base_path($database_path_input_);
+        return base_path($database_path_input);
     }
 
     /**
      * @param  array<string, mixed>  $connection_config_
      */
-    private function server_database_exists_(array $connection_config_, string $database_name_): bool
+    public function Server_Database_Exists(array $connection_config, string $database_name): bool
     {
         config([
-            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config_,
+            'database.connections.'.self::TEMP_CONNECTION_NAME => $connection_config,
         ]);
 
         DB::purge(self::TEMP_CONNECTION_NAME);
@@ -236,7 +236,7 @@ class hahaha_command_delete_database extends Command
                     continue;
                 }
 
-                if (strtolower((string) ($schema_['name'] ?? '')) === strtolower($database_name_)) {
+                if (strtolower((string) ($schema_['name'] ?? '')) === strtolower($database_name)) {
                     return true;
                 }
             }
@@ -247,17 +247,17 @@ class hahaha_command_delete_database extends Command
         }
     }
 
-    private function path_is_absolute_(string $path_input_): bool
+    public function Path_Is_Absolute(string $path_input): bool
     {
-        if ($path_input_ === '') {
+        if ($path_input === '') {
             return false;
         }
 
-        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path_input_) === 1) {
+        if (preg_match('/^[A-Za-z]:[\\\\\\/]/', $path_input) === 1) {
             return true;
         }
 
-        return str_starts_with($path_input_, '/')
-            || str_starts_with($path_input_, '\\');
+        return str_starts_with($path_input, '/')
+            || str_starts_with($path_input, '\\');
     }
 }
