@@ -41,11 +41,11 @@ class hahaha_command_db_table_enum_generate extends Command
         }
 
         $result_ = $this->hahaha_service_db_table_enum_generate_->Table_Enum_Generate(
-            connection_: $connection_,
-            name_argument_: $name_argument_,
-            database_name_: $database_name_,
-            is_force_: $is_force_,
-            on_output_: fn (string $message_) => $this->components->info($message_),
+            connection: $connection_,
+            name_argument: $name_argument_,
+            database_name: $database_name_,
+            is_force: $is_force_,
+            on_output: fn (string $message_) => $this->components->info($message_),
         );
 
         $this->components->info(
